@@ -2,7 +2,7 @@
 
 Web interface for displaying frames from depth ai camera.
 
-Currently use this to play around some basic image processing kernels.
+Currently use this to play around with some basic image processing kernels.
 
 ## Usage
 
