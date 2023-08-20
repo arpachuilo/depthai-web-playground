@@ -102,7 +102,7 @@ def poll(cb):
         case "gray":
             rgb = inRGB.getCvFrame()
             gray = cv2.cvtColor(rgb, cv2.COLOR_BGR2GRAY)
-            gray = convolveWithFn(gray).astype("uint8")
+            gray = convolveWithFn(gray)#.astype("uint8")
             gray = cv2.applyColorMap(gray, colormap)
             cb(gray)
 

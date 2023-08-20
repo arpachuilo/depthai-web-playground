@@ -11,6 +11,7 @@ from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 import uvicorn
 
+import convolve
 import camera
 import camerafeed
 
@@ -83,24 +84,25 @@ async def set_colormap(color):
 
 
 # get convolve fn for mixing kernels
-@app.get("/convolve/", response_class=PlainTextResponse)
+@app.get("/convolve", response_class=PlainTextResponse)
 async def get_convolve_fn():
-    return camera.convolveFn
+    return convolve.convolveFn
 
 
 # set convolve fn for mixing kernels
 @app.post("/convolve/{fn}")
 async def set_convolve_fn(fn):
-    camera.convolveFn = fn
+    convolve.convolveFn = fn
+    return True
 
 
 # set kernel for variable
 @app.get("/kernel/{t}")
 async def get_kernel(t):
-    if t in camera.kernels:
-        return camera.kernels[t].tolist()
+    if t in convolve.kernels:
+        return convolve.kernels[t].tolist()
     else:
-        return camera.identity
+        return convolve.identity
 
 
 # set kernel for variable
@@ -112,11 +114,11 @@ async def set_kernel(t, request: Request):
     if values.shape != (3, 3) or np.isnan(values).any():
         return False
 
-    camera.kernels[t] = np.array(values)
+    convolve.kernels[t] = np.array(values)
 
     # ensure multiplier exist
-    if t not in camera.multipliers:
-        camera.multipliers[t] = 1.0
+    if t not in convolve.multipliers:
+        convolve.multipliers[t] = 1.0
 
     return True
 
@@ -124,8 +126,8 @@ async def set_kernel(t, request: Request):
 # get multiplier for variable
 @app.get("/multiplier/{t}")
 async def get_multiplier(t):
-    if t in camera.multipliers:
-        return camera.multipliers[t]
+    if t in convolve.multipliers:
+        return convolve.multipliers[t]
     else:
         return 1.0
 
@@ -135,11 +137,11 @@ async def get_multiplier(t):
 async def set_multiplier(t, x):
     try:
         mult = float(x)
-        camera.multipliers[t] = mult
+        convolve.multipliers[t] = mult
 
         # ensure kernel exist
-        if t not in camera.kernels:
-            camera.kernels[t] = camera.identity
+        if t not in convolve.kernels:
+            convolve.kernels[t] = convolve.identity
 
         return True
     except:
