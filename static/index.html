@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>DepthAI Web Playground</title>
+
+    <link rel="stylesheet" href="static/sakura-vader.css" />
+    <script src="static/debounce.js"></script>
+
+    <style>
+      body {
+        max-width: calc(640px * 2 + 26px) !important;
+      }
+      #frame {
+        margin: auto !important;
+        display: inline-block !important;
+        width: 640px !important;
+        height: 400px !important;
+      }
+      textarea {
+        width: 10em;
+        text-wrap: nowrap;
+      }
+      button {
+        margin-right: 5px;
+      }
+    </style>
+
+    <script type="text/javascript">
+      function setStream() {
+        let elMode = document.getElementById("mode");
+        let elFrame = document.getElementById("frame");
+        elFrame.src = `/video/${elMode.value}`;
+      }
+
+      function setColormap() {
+        let el = document.getElementById("colormap");
+
+        const xhr = new XMLHttpRequest();
+        xhr.open("POST", `/colormap/${el.value}`, true);
+        xhr.send();
+      }
+
+      function setConvolveFn() {
+        let el = document.getElementById("convolve-fn");
+
+        const xhr = new XMLHttpRequest();
+        xhr.open("POST", `/convolve/${el.value}`, true);
+        xhr.send();
+      }
+
+      function setMultiplier(t) {
+        let el = document.getElementById(`${t}-multiplier`);
+
+        const xhr = new XMLHttpRequest();
+        xhr.open("POST", `/multiplier/{t}/${el.value}`, true);
+        xhr.send();
+      }
+
+      function setKernelPreset(t) {
+        let elPreset = document.getElementById(`${t}-kernel-preset`);
+        let elKernel = document.getElementById(`${t}-kernel`);
+        let elMultiplier = document.getElementById(`${t}-multiplier`);
+        let [mult, kernel] = elPreset.value.split(":");
+
+        // set kernel
+        elKernel.value = kernel;
+        elKernel.focus();
+        elKernel.blur();
+        elKernel.oninput();
+
+        // set mult
+        elMultiplier.value = mult;
+        elMultiplier.onchange();
+      }
+    </script>
+  </head>
+  <body>
+    <h1>Preview</h1>
+    <p>
+      <img id="frame" src="" />
+    </p>
+
+    <p>
+      <label for="mode">Mode</label>
+      <select name="mode" id="mode" onchange="setStream()">
+        <option value="rgb">RGB</option>
+        <option value="gray">Gray</option>
+        <option value="depth">Depth</option>
+        <option value="disparity">Disparity</option>
+        <option value="custom">Custom</option>
+      </select>
+
+      <label for="colormap">Colormap (does not support RGB)</label>
+      <select name="colormap" id="colormap" onchange="setColormap()">
+        <option value="0">AUTUMN</option>
+        <option value="1">BONE</option>
+        <option value="2">JET</option>
+        <option value="3">WINTER</option>
+        <option value="4">RAINBOW</option>
+        <option value="5">OCEAN</option>
+        <option value="6">SUMMER</option>
+        <option value="7">SPRING</option>
+        <option value="8">COOL</option>
+        <option value="9">HSV</option>
+        <option value="10">PINK</option>
+        <option value="11">HOT</option>
+        <option value="12">PARULA</option>
+        <option value="13">MAGMA</option>
+        <option value="14">INFERNO</option>
+        <option value="15">PLASMA</option>
+        <option value="16">VIRIDIS</option>
+        <option value="17">CIVIDIS</option>
+        <option value="18">TWILIGHT</option>
+        <option value="19">TWILIGHT_SHIFTED</option>
+        <option value="20">TURBO</option>
+        <option value="21">DEEPGREEN</option>
+      </select>
+
+      <label for="convolve-fn">Convolve Fn</label>
+      <select name="convolve-fn" id="convolve-fn" onchange="setConvolveFn()">
+        <option value="x">x</option>
+        <option value="y">y</option>
+        <option value="sqrt(x2+y2)">√(x²+y²)</option>
+      </select>
+
+      <datalist id="kernel-presets">
+        <option value="1:">Custom</option>
+        <option value="1:0,0,0,0,1,0,0,0,0">Identity</option>
+        <option value="1:1,0,-1,2,0,-2,1,0,-1">Sobel X</option>
+        <option value="1:1,2,1,0,0,0,-1,-2,-1">Sobel Y</option>
+        <option value="1:1,0,-1,1,0,-1,1,0,-1">Prewitt X</option>
+        <option value="1:1,1,1,0,0,0,-1,-1,-1">Prewitt Y</option>
+        <option value="1:0,-1,0,-1,5,-1,0,-1,0">Sharpen</option>
+        <option value="1:-2,-1,0,-1,1,1,0,1,2">Emboss</option>
+        <option value="0.1111:1,1,1,1,1,1,1,1,1">Box Blur</option>
+        <option value="0.0625:1,2,1,2,4,2,1,2,1">Gaussian Blur</option>
+      </datalist>
+    </p>
+
+    <table>
+      <thead>
+        <tr>
+          <label>Kernel Variables</label>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>x</td>
+          <td>y</td>
+        </tr>
+        <tr>
+          <td>
+            <label for="x-kernel-preset">Presets</label>
+            <select
+              name="x-kernel-preset"
+              id="x-kernel-preset"
+              onchange="setKernelPreset('x')"
+            ></select>
+
+            <label for="x-kernel">Kernel</label>
+            <textarea
+              name="x-kernel"
+              id="x-kernel"
+              cols="1"
+              rows="5"
+            ></textarea>
+            <span id="x-kernel-error"></span>
+
+            <label for="x-multiplier">Multiplier</label>
+            <input
+              name="x-multiplier"
+              id="x-multiplier"
+              type="number"
+              value="1"
+              onchange="setMultiplier('x')"
+            />
+          </td>
+
+          <td>
+            <label for="y-kernel-preset">Presets</label>
+            <select
+              name="y-kernel-preset"
+              id="y-kernel-preset"
+              onchange="setKernelPreset('y')"
+            ></select>
+
+            <label for="y-kernel">Kernel</label>
+            <textarea
+              name="y-kernel"
+              id="y-kernel"
+              cols="1"
+              rows="5"
+            ></textarea>
+            <span id="y-kernel-error"></span>
+
+            <label for="y-multiplier">Multiplier</label>
+            <input
+              name="y-multiplier"
+              id="y-multiplier"
+              type="number"
+              value="1"
+              onchange="setMultiplier('y')"
+            />
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <script type="text/javascript">
+      const textToKernel = (t, input, col = 3, row = 3) => {
+        const elKernelError = document.getElementById(`${t}-kernel-error`);
+        const k = [];
+
+        // split on commas
+        const numbers = input.split(",");
+
+        // dump into matrix
+        let i = col;
+        let j = row;
+        let layer = [];
+        for (let n of numbers) {
+          i--;
+          let parsed = parseInt(n);
+          if (isNaN(parsed)) {
+            elKernelError.innerText = "Invalid kernel";
+            return [];
+          }
+
+          layer.push(parsed);
+
+          if (i === 0) {
+            k.push(layer);
+            layer = [];
+            i = col; // reset col
+            j--; // dec row
+          }
+        }
+
+        if (i === col && j === 0) {
+          elKernelError.innerText = "";
+          return k;
+        }
+
+        elKernelError.innerText = "Invalid kernel";
+        return [];
+      };
+
+      const kernelToText = (data) => {
+        let t = "";
+
+        // loop over rows
+        for (let row of data) {
+          t += `${row.join(", ")},\n`;
+        }
+
+        return t.trim().slice(0, -1);
+      };
+
+      const getMode = () => {
+        const el = document.getElementById(`mode`);
+        const xhr = new XMLHttpRequest();
+        xhr.onload = function () {
+          try {
+            el.value = this.responseText;
+            setStream();
+          } catch {}
+        };
+
+        xhr.open("GET", `/mode`, true);
+        xhr.send();
+      };
+
+      const getColormap = () => {
+        const el = document.getElementById(`colormap`);
+        const xhr = new XMLHttpRequest();
+        xhr.onload = function () {
+          try {
+            el.value = this.responseText;
+          } catch {}
+        };
+
+        xhr.open("GET", `/colormap`, true);
+        xhr.send();
+      };
+
+      const getConvolve = (t) => {
+        const el = document.getElementById(`convolve-fn`);
+        const xhr = new XMLHttpRequest();
+        xhr.onload = function () {
+          try {
+            el.value = this.responseText;
+          } catch {}
+        };
+
+        xhr.open("GET", `/convolve`, true);
+        xhr.send();
+      };
+
+      const getKernel = (t) => {
+        const el = document.getElementById(`${t}-kernel`);
+        const xhr = new XMLHttpRequest();
+        xhr.onload = function () {
+          try {
+            const data = JSON.parse(this.responseText);
+            el.value = kernelToText(data);
+          } catch {}
+        };
+
+        xhr.open("GET", `/kernel/${t}`, true);
+        xhr.send();
+      };
+
+      const getMultiplier = (t) => {
+        const el = document.getElementById(`${t}-multiplier`);
+        const xhr = new XMLHttpRequest();
+        xhr.onload = function () {
+          try {
+            el = this.responseText;
+          } catch {}
+        };
+
+        xhr.open("GET", `/multiplier/${t}`, true);
+        xhr.send();
+      };
+
+      // throttle kernel sending
+      const sendKernel = (t) =>
+        throttle(() => {
+          const elKernel = document.getElementById(`${t}-kernel`);
+          const kernel = textToKernel(t, elKernel.value);
+
+          if (kernel.length !== 0) {
+            const xhr = new XMLHttpRequest();
+            xhr.open("POST", `/kernel/${t}`, true);
+            xhr.send(JSON.stringify(kernel));
+          }
+        }, 16);
+
+      const formatKernel = (t) => () => {
+        const elKernel = document.getElementById(`${t}-kernel`);
+        let input = textToKernel(t, elKernel.value);
+        if (input.length !== 0) elKernel.value = kernelToText(input);
+      };
+
+      // load mode/colormap/convolve
+      getMode();
+      getColormap();
+      getConvolve();
+
+      // load initial types
+      let types = ["x", "y"];
+      for (t of types) {
+        // get kernel/mult
+        getKernel(t);
+        getMultiplier(t);
+
+        // attach listeners
+        const elKernel = document.getElementById(`${t}-kernel`);
+        elKernel.oninput = sendKernel(t);
+        elKernel.onblur = formatKernel(t);
+
+        // populate kernel presets
+        const presets = document.getElementById("kernel-presets").children;
+        const kernelTPresets = document.getElementById(`${t}-kernel-preset`);
+        for (preset of presets) {
+          let presetClone = preset.cloneNode(true);
+          kernelTPresets.appendChild(presetClone);
+        }
+      }
+    </script>
+  </body>
+</html>
